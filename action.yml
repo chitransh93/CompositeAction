@@ -1,39 +1,36 @@
-#name the workflfow:
-name: "Publish to Docker"
-description: "Build a container image and Pushes it to Docker registry"
+name: Create and Publish Docker Image
 
-#Inputs to be given to this workflow/template:
-#registry_username, registry_password, image_name, tag.
-inputs:
-  registry_username:
-    description: "Username for image registry"
-    required: true
-  registry_password:
-    description: "Password for image registry"
-    required: true
-  image_name:
-    description: "Name of the image to push"
-    required: true
-  tag: 
-    description: "How to tag the image. Default: latest"
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        type: string
+      tag: 
+        type: string
+    secrets:
+      registry_username:
+        required: true
+      registry_password:
+        required: true
 
-#The actions to be performed by this workflow.
-#
-runs:
-  using: "composite"
-  steps:
-  #Using docker setup-buildx-action@v1 Action:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:      
+      - uses: actions/checkout@v2
+      
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
-  #Using docker login Action:
+
       - name: Login to the Registry
         uses: docker/login-action@v1
         with:
-          username: ${{inputs.registry_username}}
-          password: ${{inputs.registry_password}}
-  #Using set tag script to set the tag:
+          username: ${{secrets.registry_username}}
+          password: ${{secrets.registry_password}}
+      
       - name: Set the tag
-        shell: bash
         run: |
           if [ -z "${{inputs.tag}}" ]
           then
@@ -41,10 +38,17 @@ runs:
           else
             echo "final_tag=${{inputs.tag}}" >> $GITHUB_ENV
           fi
-   #Using build-push-action to run the build and push to the repo: 
+      
       - name: Build and Push the Image
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
-          tags: ${{inputs.registry_username}}/${{inputs.image_name}}:${{env.final_tag}}
+          tags: ${{secrets.registry_username}}/${{inputs.image_name}}:${{env.final_tag}}
+          
+          
+  do-something-else:
+    runs-on: ubuntu-latest
+
+    steps:
+    - run: echo "Hello"
