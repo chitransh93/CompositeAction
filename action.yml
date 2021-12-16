@@ -1,36 +1,33 @@
-name: Create and Publish Docker Image
+name: "Publish to Docker"
+description: "Build a container image and Pushes it to Docker registry"
 
-on:
-  workflow_call:
-    inputs:
-      image_name:
-        required: true
-        type: string
-      tag: 
-        type: string
-    secrets:
-      registry_username:
-        required: true
-      registry_password:
-        required: true
+inputs:
+  registry_username:
+    description: "Username for image registry"
+    required: true
+  registry_password:
+    description: "Password for image registry"
+    required: true
+  image_name:
+    description: "Name of the image to push"
+    required: true
+  tag: 
+    description: "How to tag the image. Default: latest"    
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:      
-      - uses: actions/checkout@v2
-      
+runs:
+  using: "composite"
+  steps:
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
       - name: Login to the Registry
         uses: docker/login-action@v1
         with:
-          username: ${{secrets.registry_username}}
-          password: ${{secrets.registry_password}}
+          username: ${{inputs.registry_username}}
+          password: ${{inputs.registry_password}}
       
       - name: Set the tag
+        shell: bash
         run: |
           if [ -z "${{inputs.tag}}" ]
           then
@@ -44,11 +41,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{secrets.registry_username}}/${{inputs.image_name}}:${{env.final_tag}}
-          
-          
-  do-something-else:
-    runs-on: ubuntu-latest
-
-    steps:
-    - run: echo "Hello"
+          tags: ${{inputs.registry_username}}/${{inputs.image_name}}:${{env.final_tag}}
